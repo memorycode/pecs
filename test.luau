@@ -1,4 +1,4 @@
-local World = require("./init.luau")
+local World = require("./src/init.luau")
 
 local id = 0
 local function component()
@@ -39,16 +39,26 @@ end
 
 local Person = component()
 local Car = component()
-local ChildOf = component()
+local ChildOf = relation()
 
 local world = World.new()
-local person = world:spawn()
-local car = world:spawn()
+
+local michael = world:spawn()
+local andy = world:spawn()
+
+local toyota = world:spawn()
+local honda = world:spawn()
+
+world:set(michael, Person("michael"))
+world:set(andy, Person("andy"))
+
+world:set(toyota, ChildOf(michael))
+world:set(honda, ChildOf(andy))
 
 --print(person, car, world)
 --world:set(car, Car("toyota"))
-world:set(car, ChildOf(person, car))
-for entity in world:query(ChildOf(person)) do
+print("archetypes:", world.archetypes)
+for entity in world:query(ChildOf(michael)) do
 	print("child:", entity)
 end
 --world:set(person, Person("michael"))
