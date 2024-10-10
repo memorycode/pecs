@@ -148,12 +148,161 @@ function World:set(entity, data)
 	newArchetype.fields[newArchetype.idToField[componentId]][fieldIndex] = if isRelation then data[3] else data[2]
 end
 
+local function queryResult(compatibleArchetypes: { Archetype }, queryLength: number, componentIds: { number })
+	local A, B, C, D, E, F, G, H = unpack(componentIds)
+	local a, b, c, d, e, f, g, h = nil, nil, nil, nil, nil, nil, nil, nil
+
+	local currentEntityIndex = 1
+	local currentArchetypeIndex = 1
+	local currentArchetype = compatibleArchetypes[1]
+	local currentEntities = currentArchetype.entities
+
+	local function cacheComponentStorages()
+		if currentArchetype == nil then
+			return
+		end
+
+		local storage, componentIdToStorageIndex = currentArchetype.fields, currentArchetype.idToField
+		if queryLength == 1 then
+			a = storage[componentIdToStorageIndex[A]]
+		elseif queryLength == 2 then
+			a = storage[componentIdToStorageIndex[A]]
+			b = storage[componentIdToStorageIndex[B]]
+		elseif queryLength == 3 then
+			a = storage[componentIdToStorageIndex[A]]
+			b = storage[componentIdToStorageIndex[B]]
+			c = storage[componentIdToStorageIndex[C]]
+		elseif queryLength == 4 then
+			a = storage[componentIdToStorageIndex[A]]
+			b = storage[componentIdToStorageIndex[B]]
+			c = storage[componentIdToStorageIndex[C]]
+			d = storage[componentIdToStorageIndex[D]]
+		elseif queryLength == 5 then
+			a = storage[componentIdToStorageIndex[A]]
+			b = storage[componentIdToStorageIndex[B]]
+			c = storage[componentIdToStorageIndex[C]]
+			d = storage[componentIdToStorageIndex[D]]
+			e = storage[componentIdToStorageIndex[E]]
+		elseif queryLength == 6 then
+			a = storage[componentIdToStorageIndex[A]]
+			b = storage[componentIdToStorageIndex[B]]
+			c = storage[componentIdToStorageIndex[C]]
+			d = storage[componentIdToStorageIndex[D]]
+			e = storage[componentIdToStorageIndex[E]]
+			f = storage[componentIdToStorageIndex[F]]
+		elseif queryLength == 7 then
+			a = storage[componentIdToStorageIndex[A]]
+			b = storage[componentIdToStorageIndex[B]]
+			c = storage[componentIdToStorageIndex[C]]
+			d = storage[componentIdToStorageIndex[D]]
+			e = storage[componentIdToStorageIndex[E]]
+			f = storage[componentIdToStorageIndex[F]]
+			g = storage[componentIdToStorageIndex[G]]
+		elseif queryLength == 8 then
+			a = storage[componentIdToStorageIndex[A]]
+			b = storage[componentIdToStorageIndex[B]]
+			c = storage[componentIdToStorageIndex[C]]
+			d = storage[componentIdToStorageIndex[D]]
+			e = storage[componentIdToStorageIndex[E]]
+			f = storage[componentIdToStorageIndex[F]]
+			g = storage[componentIdToStorageIndex[G]]
+			h = storage[componentIdToStorageIndex[H]]
+		end
+
+		-- For anything longer, we do not cache.
+	end
+
+	local entityId: number
+	local function nextEntity(): any
+		entityId = currentEntities[currentEntityIndex]
+		while entityId == nil do
+			currentEntityIndex = 1
+			currentArchetypeIndex += 1
+			currentArchetype = compatibleArchetypes[currentArchetypeIndex]
+			if currentArchetype == nil then
+				return nil
+			end
+
+			cacheComponentStorages()
+			currentEntities = currentArchetype.entities
+			entityId = currentEntities[currentEntityIndex]
+		end
+
+		local entityIndex = currentEntityIndex
+		currentEntityIndex += 1
+
+		if queryLength == 1 then
+			return entityId, a[entityIndex]
+		elseif queryLength == 2 then
+			return entityId, a[entityIndex], b[entityIndex]
+		elseif queryLength == 3 then
+			return entityId, a[entityIndex], b[entityIndex], c[entityIndex]
+		elseif queryLength == 4 then
+			return entityId, a[entityIndex], b[entityIndex], c[entityIndex], d[entityIndex]
+		elseif queryLength == 5 then
+			return entityId, a[entityIndex], b[entityIndex], c[entityIndex], d[entityIndex], e[entityIndex]
+		elseif queryLength == 6 then
+			return entityId,
+				a[entityIndex],
+				b[entityIndex],
+				c[entityIndex],
+				d[entityIndex],
+				e[entityIndex],
+				f[entityIndex]
+		elseif queryLength == 7 then
+			return entityId,
+				a[entityIndex],
+				b[entityIndex],
+				c[entityIndex],
+				d[entityIndex],
+				e[entityIndex],
+				f[entityIndex],
+				g[entityIndex]
+		elseif queryLength == 8 then
+			return entityId,
+				a[entityIndex],
+				b[entityIndex],
+				c[entityIndex],
+				d[entityIndex],
+				e[entityIndex],
+				f[entityIndex],
+				g[entityIndex],
+				h[entityIndex]
+		else
+			local output = table.create(queryLength + 1)
+			output[1] = entityIndex
+
+			for index, componentId in componentIds do
+				output[index + 1] =
+					currentArchetype.fields[currentArchetype.componentIdToStorageIndex[componentId]][entityIndex]
+			end
+
+			return unpack(output, 1, queryLength + 1)
+		end
+	end
+
+	local function iter()
+		return nextEntity
+	end
+
+	cacheComponentStorages()
+	return setmetatable({
+		next = nextEntity,
+	}, {
+		__iter = iter,
+		__call = nextEntity,
+	})
+end
+
 function World:query(...)
 	local terms = { ... }
+	local componentIds = {}
 	local possibleArchetypes
 	local compatibleArchetypes = {}
 	for _, component in terms do
 		local componentId = #component
+		table.insert(componentIds, componentId)
+
 		-- print("checking", componentId)
 		local associatedArchetypes = self.componentArchetypes[componentId]
 		if associatedArchetypes == nil then
@@ -185,6 +334,7 @@ function World:query(...)
 	end
 
 	print("compatible", compatibleArchetypes)
+	return queryResult(compatibleArchetypes, #componentIds, componentIds)
 end
 
 return World

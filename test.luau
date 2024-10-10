@@ -54,17 +54,10 @@ world:set(andy, Person("andy"))
 
 world:set(toyota, ChildOf(michael))
 world:set(honda, ChildOf(andy))
+world:set(toyota, Car())
+world:set(honda, Car())
 
---print(person, car, world)
---world:set(car, Car("toyota"))
 print("archetypes:", world.archetypes)
-for entity in world:query(ChildOf(michael)) do
-	print("child:", entity)
+for entity in world:query(Car, ChildOf(andy)) do
+	print("child:", entity, entity == honda)
 end
---world:set(person, Person("michael"))
-
--- for id, car in world:query(Car) do
--- end
-
--- for id, car in world:query(ChildOf(person)) do
--- end
